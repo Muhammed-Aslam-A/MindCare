@@ -116,7 +116,12 @@ askBtn.addEventListener('click', async () => {
     responseArea.classList.add('hidden');
 
     try {
-        const response = await fetch(`${API_URL}/ask?query=${encodeURIComponent(query)}`);
+        const response = await fetch(`${API_URL}/ask`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ query })
+});
+
         const data = await response.json();
 
         if (data.response) {
