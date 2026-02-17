@@ -33,17 +33,26 @@ class RAGSystem:
         self.index.add(np.array(vectors).astype('float32'))
         self.memories = texts
 
-    def search(self, query, k=1):
-        if not self.memories:
-            return None
-        
-        query_vector = self.encoder.encode([query])
-        D, I = self.index.search(np.array(query_vector).astype('float32'), k)
-        
-        if I[0][0] == -1:
-            return None
-        
-        return self.memories[I[0][0]]
+    def search(self, query, k=1, threshold=1.5):
+    if not self.memories:
+        return None
+
+    query_vector = self.encoder.encode([query])
+    D, I = self.index.search(np.array(query_vector).astype('float32'), k)
+
+    distance = D[0][0]
+    index = I[0][0]
+
+    # No valid result
+    if index == -1:
+        return None
+
+    # Reject low similarity matches
+    if distance > threshold:
+        return None
+
+    return self.memories[index]
+
 
 # Singleton instance
 rag = RAGSystem()
