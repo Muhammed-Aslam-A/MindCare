@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MindCare AI</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="background-orb orb-1"></div>
+    <div class="background-orb orb-2"></div>
+    
+    <div class="container">
+        <header>
+            <div class="logo">
+                <i class="fas fa-brain fa-2x"></i>
+                <h1>MindCare <span class="highlight">AI</span></h1>
+            </div>
+            <div class="lang-select-wrapper">
+                <i class="fas fa-globe"></i>
+                <select id="languageSelect">
+                    <option value="en-US">English (US)</option>
+                    <option value="lv-LV">Latvian (LV)</option>
+                </select>
+            </div>
+        </header>
+
+        <main>
+            <!-- Add Memory Section -->
+            <section class="card input-section">
+                <div class="card-header">
+                    <h2><i class="fas fa-plus-circle"></i> Store a Memory</h2>
+                </div>
+                <div class="input-wrapper">
+                    <input type="text" id="memoryInput" placeholder="Type or speak a new memory...">
+                    <button id="micMemory" class="mic-btn" title="Speak Memory">
+                        <i class="fas fa-microphone"></i>
+                    </button>
+                </div>
+                <button id="addMemoryBtn" class="primary-btn">
+                    <i class="fas fa-save"></i> Save Memory
+                </button>
+            </section>
+
+            <!-- Ask Question Section -->
+            <section class="card query-section">
+                <div class="card-header">
+                    <h2><i class="fas fa-search"></i> Recall Memory</h2>
+                </div>
+                <div class="input-wrapper">
+                    <input type="text" id="queryInput" placeholder="Ask a question about your memories...">
+                    <button id="micQuery" class="mic-btn" title="Speak Question">
+                        <i class="fas fa-microphone"></i>
+                    </button>
+                </div>
+                <button id="askBtn" class="secondary-btn">
+                    <i class="fas fa-paper-plane"></i> Ask MindCare
+                </button>
+            </section>
+
+            <!-- Response Section -->
+            <section id="responseArea" class="response-card hidden">
+                <div class="response-header">
+                    <h3><i class="fas fa-robot"></i> AI Response</h3>
+                    <button id="speakResponseBtn" class="icon-btn small" title="Replay Audio">
+                        <i class="fas fa-volume-up"></i>
+                    </button>
+                </div>
+                <div class="response-content">
+                    <p id="responseText"></p>
+                </div>
+            </section>
+        </main>
+        
+        <footer>
+            <p>MindCare AI &copy; 2026 • Multilingual Voice Assistant</p>
+        </footer>
+    </div>
+    
+    <!-- Notification Toast -->
+    <div id="toast" class="toast hidden">Memory Saved!</div>
+
+    <script src="script.js"></script>
+</body>
+</html>
+
+        
+        return self.memories[I[0][0]]
+
+# Singleton instance
+rag = RAGSystem()
