@@ -2,56 +2,101 @@ from sentence_transformers import SentenceTransformer
 import faiss
 import numpy as np
 
+
 class RAGSystem:
     def __init__(self):
-        # efficient, small model
-        self.encoder = SentenceTransformer('all-MiniLM-L6-v2')
-        # 384 dimensions for all-MiniLM-L6-v2
-        self.index = faiss.IndexFlatL2(384)
+        # Load embedding model (384-dimension output)
+        self.encoder = SentenceTransformer("all-MiniLM-L6-v2")
+
+        # Create FAISS L2 index
+        self.dimension = 384
+        self.index = faiss.IndexFlatL2(self.dimension)
+
+        # Store original memory texts
         self.memories = []
 
-    def add_memory(self, text):
+    def add_memory(self, text: str):
+        """
+        Add a single memory to the FAISS index
+        """
+        if not text:
+            return
+
+        # Encode text
         vector = self.encoder.encode([text])
-        self.index.add(np.array(vector).astype('float32'))
+        vector = np.array(vector).astype("float32")
+
+        # Add to index
+        self.index.add(vector)
+
+        # Store raw text
         self.memories.append(text)
 
     def rebuild_index(self, memories):
-        """Rebuild index from a list of Memory objects or strings"""
+        """
+        Rebuild index from database records
+        Accepts either:
+        - List of Memory objects
+        - List of strings
+        """
         self.index.reset()
         self.memories = []
-        
+
         if not memories:
             return
 
-        # Extract text content if they are objects, else assume strings
-        texts = [m.content if hasattr(m, 'content') else m for m in memories]
-        
+        # Extract text content
+        texts = [
+            m.content if hasattr(m, "content") else m
+            for m in memories
+        ]
+
         if not texts:
             return
 
+        # Encode all texts
         vectors = self.encoder.encode(texts)
-        self.index.add(np.array(vectors).astype('float32'))
+        vectors = np.array(vectors).astype("float32")
+
+        # Add to FAISS
+        self.index.add(vectors)
+
+        # Store texts
         self.memories = texts
 
-    def search(self, query, k=1, threshold=1.5):
-    if not self.memories:
-        return None
+    def search(self, query: str, k: int = 1, threshold: float = 1.5):
+        """
+        Search most relevant memory using L2 similarity.
+        Lower distance = more similar.
+        """
 
-    query_vector = self.encoder.encode([query])
-    D, I = self.index.search(np.array(query_vector).astype('float32'), k)
+        # If index empty
+        if not self.memories or self.index.ntotal == 0:
+            return None
 
-    distance = D[0][0]
-    index = I[0][0]
+        # Encode query
+        query_vector = self.encoder.encode([query])
+        query_vector = np.array(query_vector).astype("float32")
 
-    # No valid result
-    if index == -1:
-        return None
+        # Perform search
+        D, I = self.index.search(query_vector, k)
 
-    # Reject low similarity matches
-    if distance > threshold:
-        return None
+        # Safety checks
+        if len(I) == 0 or len(I[0]) == 0:
+            return None
 
-    return self.memories[index]
+        index = int(I[0][0])
+        distance = float(D[0][0])
+
+        # Invalid index
+        if index == -1:
+            return None
+
+        # Reject weak matches
+        if distance > threshold:
+            return None
+
+        return self.memories[index]
 
 
 # Singleton instance
