@@ -1,103 +1,87 @@
-from sentence_transformers import SentenceTransformer
 import faiss
 import numpy as np
+from sentence_transformers import SentenceTransformer
 
 
-class RAGSystem:
+class RAG:
     def __init__(self):
-        # Load embedding model (384-dimension output)
+        # Load embedding model
         self.encoder = SentenceTransformer("all-MiniLM-L6-v2")
 
-        # Create FAISS L2 index
-        self.dimension = 384
+        # Determine embedding dimension dynamically
+        dummy_embedding = self.encoder.encode(["test"])
+        self.dimension = len(dummy_embedding[0])
+
+        # FAISS index (L2 distance)
         self.index = faiss.IndexFlatL2(self.dimension)
 
-        # Store original memory texts
+        # Store raw memory texts
         self.memories = []
 
+    # ---------------------------------------------------
+    # Add single memory
+    # ---------------------------------------------------
     def add_memory(self, text: str):
-        """
-        Add a single memory to the FAISS index
-        """
         if not text:
             return
 
-        # Encode text
-        vector = self.encoder.encode([text])
-        vector = np.array(vector).astype("float32")
+        embedding = self.encoder.encode([text])
+        embedding = np.array(embedding).astype("float32")
 
-        # Add to index
-        self.index.add(vector)
-
-        # Store raw text
+        self.index.add(embedding)
         self.memories.append(text)
 
-    def rebuild_index(self, memories):
+    # ---------------------------------------------------
+    # Rebuild index from database at startup
+    # ---------------------------------------------------
+    def rebuild_index(self, memory_objects):
         """
-        Rebuild index from database records
-        Accepts either:
-        - List of Memory objects
-        - List of strings
+        memory_objects = list of DB Memory rows
         """
         self.index.reset()
         self.memories = []
 
-        if not memories:
+        if not memory_objects:
             return
 
-        # Extract text content
-        texts = [
-            m.content if hasattr(m, "content") else m
-            for m in memories
-        ]
+        texts = [m.content for m in memory_objects]
+        embeddings = self.encoder.encode(texts)
+        embeddings = np.array(embeddings).astype("float32")
 
-        if not texts:
-            return
+        self.index.add(embeddings)
+        self.memories.extend(texts)
 
-        # Encode all texts
-        vectors = self.encoder.encode(texts)
-        vectors = np.array(vectors).astype("float32")
-
-        # Add to FAISS
-        self.index.add(vectors)
-
-        # Store texts
-        self.memories = texts
-
-    def search(self, query: str, k: int = 1, threshold: float = 1.5):
+    # ---------------------------------------------------
+    # Semantic Search
+    # ---------------------------------------------------
+    def search(self, query: str, top_k: int = 3, threshold: float = 1.5):
         """
-        Search most relevant memory using L2 similarity.
-        Lower distance = more similar.
+        Returns list of relevant memory strings.
+        Uses L2 distance (lower = more similar).
         """
 
-        # If index empty
         if not self.memories or self.index.ntotal == 0:
-            return None
+            return []
 
         # Encode query
         query_vector = self.encoder.encode([query])
         query_vector = np.array(query_vector).astype("float32")
 
-        # Perform search
-        D, I = self.index.search(query_vector, k)
+        # Search FAISS
+        distances, indices = self.index.search(query_vector, top_k)
 
-        # Safety checks
-        if len(I) == 0 or len(I[0]) == 0:
-            return None
+        matches = []
 
-        index = int(I[0][0])
-        distance = float(D[0][0])
+        for idx, distance in zip(indices[0], distances[0]):
+            if idx == -1:
+                continue
 
-        # Invalid index
-        if index == -1:
-            return None
+            # Apply similarity threshold
+            if distance <= threshold:
+                matches.append(self.memories[int(idx)])
 
-        # Reject weak matches
-        if distance > threshold:
-            return None
-
-        return self.memories[index]
+        return matches
 
 
 # Singleton instance
-rag = RAGSystem()
+rag = RAG()
