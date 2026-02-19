@@ -1,4 +1,4 @@
-const API_URL = "http://127.0.0.1:8000";
+const API_URL = "https://mindcare-1lns.onrender.com";
 
 // DOM Elements
 const memoryInput = document.getElementById('memoryInput');
