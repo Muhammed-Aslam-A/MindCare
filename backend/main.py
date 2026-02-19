@@ -40,6 +40,27 @@ class QueryRequest(BaseModel):
 
 
 # ----------------------------
+# Perspective Rewriter
+# ----------------------------
+def rewrite_perspective(text: str) -> str:
+    replacements = {
+        " my ": " your ",
+        " My ": " Your ",
+        " i ": " you ",
+        " I ": " You ",
+        " i'm ": " you're ",
+        " I'm ": " You're ",
+        " am ": " are ",
+    }
+
+    rewritten = f" {text} "
+    for k, v in replacements.items():
+        rewritten = rewritten.replace(k, v)
+
+    return rewritten.strip()
+
+
+# ----------------------------
 # Startup Event
 # ----------------------------
 @app.on_event("startup")
@@ -53,7 +74,6 @@ def startup_event():
             print(f"Loaded {len(memories)} memories into RAG index.")
         else:
             print("No memories found in database.")
-
     finally:
         db.close()
 
@@ -93,6 +113,7 @@ def ask(request: QueryRequest):
     result = rag.search(request.query)
 
     if result:
-        return {"response": result}
+        rewritten = rewrite_perspective(result)
+        return {"response": rewritten}
     else:
         return {"response": "I don't recall anything about that."}
